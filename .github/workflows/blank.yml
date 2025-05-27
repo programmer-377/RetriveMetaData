@@ -21,7 +21,7 @@ jobs:
           echo "${{ secrets.SF_JWT_KEY }}" > server.key 
           sf org login jwt \
             --client-id ${{ secrets.SF_CONSUMER_KEY }} \
-            --jwt-key-file server.key \ # Path to the JWT key file
+            --jwt-key-file server.key \
             --username ${{ secrets.SF_USERNAME }} \
             --instance-url ${{ secrets.SF_SERVER_URL }} \ 
             --alias SFDC_v1 \
@@ -29,8 +29,8 @@ jobs:
 
       - name: Debug Git Log
         run: |
-          echo "Last 5 commits:" # Prints message header
-          git log --oneline -5 # Displays the last 5 commits in a concise format
+          echo "Last 5 commits:" 
+          git log --oneline -5 
 
       - name: Detect Changed Metadata Files
         id: changes

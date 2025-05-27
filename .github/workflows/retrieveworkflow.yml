@@ -27,3 +27,18 @@ jobs:
             --instance-url ${{ secrets.SF_SERVER_URL }} \
             --alias SFDC_v1 \
             --set-default
+            
+    - name: Retrieve metadata
+      run: |
+        mkdir -p manifest
+        echo '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata"><types><members>*</members><name>ApexClass</name></types><types><members>*</members><name>CustomObject</name></types><version>58.0</version></Package>' > manifest/package.xml
+
+        sf force:source:retrieve -x manifest/package.xml -u backupOrg
+
+    - name: Commit and Push Changes
+      run: |
+        git config user.name "programmer-377"
+        git config user.email "muthu19726@gmail.com"
+        git add .
+        git commit -m "Daily backup $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git push

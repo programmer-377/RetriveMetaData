@@ -18,14 +18,14 @@ jobs:
 
       - name: Authenticate to Salesforce (JWT)
         run: |
-          echo "${{ secrets.SF_JWT_KEY }}" > server.key # Saves the JWT key from secrets into a file
-          sf org login jwt \ # Logs into Salesforce using JWT-based authentication
-            --client-id ${{ secrets.SF_CONSUMER_KEY }} \ # Client ID of the connected app
+          echo "${{ secrets.SF_JWT_KEY }}" > server.key 
+          sf org login jwt \
+            --client-id ${{ secrets.SF_CONSUMER_KEY }} \
             --jwt-key-file server.key \ # Path to the JWT key file
-            --username ${{ secrets.SF_USERNAME }} \ # Salesforce username to authenticate
-            --instance-url ${{ secrets.SF_SERVER_URL }} \ # Salesforce instance URL
-            --alias SFDC_v1 \ # Assigns an alias to the authenticated org
-            --set-default # Sets this org as the default for subsequent CLI commands
+            --username ${{ secrets.SF_USERNAME }} \
+            --instance-url ${{ secrets.SF_SERVER_URL }} \ 
+            --alias SFDC_v1 \
+            --set-default 
 
       - name: Debug Git Log
         run: |

@@ -27,29 +27,17 @@ jobs:
             --alias SFDC_v1 \
             --set-default
 
-      - name: Debug Git Log
-        run: |
-          echo "Last 5 commits:" # Prints message header
-          git log --oneline -5 # Displays the last 5 commits in a concise format
+          - name: Retrieve metadata
+            run: |
+              mkdir -p manifest
+              echo '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata"><types><members>*</members><name>ApexClass</name></types><types><members>*</members><name>CustomObject</name></types><version>58.0</version></Package>' > manifest/package.xml
+  
+              sf force:source:retrieve -x manifest/package.xml -u backupOrg
 
-      - name: Detect Changed Metadata Files
-        id: changes
-        run: |
-          echo "Detecting changes in 'force-app/main/default'..." # Prints a header for the detection step
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- 'force-app/main/default' | grep -E '\.(cls|trigger|page|component|js|html|xml)$' || true) # Gets changed metadata files with specific extensions
-          echo "Changed files:" # Prints message header
-          echo "$CHANGED_FILES" # Lists the changed files
-          CHANGED_PATHS=$(echo "$CHANGED_FILES" | xargs) # Converts the file list to a space-separated string
-          echo "changed_paths=$CHANGED_PATHS" >> "$GITHUB_OUTPUT" # Stores the paths in a GitHub Actions output variable
-
-      - name: Deploy Changed Files
-        if: steps.changes.outputs.changed_paths != '' # Only run this step if there are changed files
-        run: |
-          echo "Deploying only changed files:" # Message indicating deployment is starting
-          echo "${{ steps.changes.outputs.changed_paths }}" # Prints the paths to be deployed
-          sf project deploy start \ # Initiates the deployment
-            --source-dir ${{ steps.changes.outputs.changed_paths }} \ # Specifies which files to deploy
-            --target-org SFDC_v1 \ # Targets the previously authenticated org
-            --wait 10 \ # Waits up to 10 minutes for the deployment to complete
-            --ignore-conflicts \ # Ignores file conflicts during deployment
-            --verbose # Provides detailed logs of the deployment
+          - name: Commit and Push Changes
+              run: |
+                git config user.name "programmer-377"
+                git config user.email "muthu19726@gmail.com"
+                git add .
+                git commit -m "Daily backup $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+                git push

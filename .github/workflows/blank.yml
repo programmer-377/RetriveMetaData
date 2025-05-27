@@ -1,0 +1,57 @@
+name: SFDC CI Deploy # Defines the name of the GitHub Actions workflow
+
+on:
+  push:
+    branches:
+      - master # Triggers the workflow only on pushes to the master branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # Runs the job on the latest Ubuntu runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetches full git history to enable accurate diffing of file changes
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli # Installs the Salesforce CLI globally using npm
+
+      - name: Authenticate to Salesforce (JWT)
+        run: |
+          echo "${{ secrets.SF_JWT_KEY }}" > server.key # Saves the JWT key from secrets into a file
+          sf org login jwt \ # Logs into Salesforce using JWT-based authentication
+            --client-id ${{ secrets.SF_CONSUMER_KEY }} \ # Client ID of the connected app
+            --jwt-key-file server.key \ # Path to the JWT key file
+            --username ${{ secrets.SF_USERNAME }} \ # Salesforce username to authenticate
+            --instance-url ${{ secrets.SF_SERVER_URL }} \ # Salesforce instance URL
+            --alias SFDC_v1 \ # Assigns an alias to the authenticated org
+            --set-default # Sets this org as the default for subsequent CLI commands
+
+      - name: Debug Git Log
+        run: |
+          echo "Last 5 commits:" # Prints message header
+          git log --oneline -5 # Displays the last 5 commits in a concise format
+
+      - name: Detect Changed Metadata Files
+        id: changes
+        run: |
+          echo "Detecting changes in 'force-app/main/default'..." # Prints a header for the detection step
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- 'force-app/main/default' | grep -E '\.(cls|trigger|page|component|js|html|xml)$' || true) # Gets changed metadata files with specific extensions
+          echo "Changed files:" # Prints message header
+          echo "$CHANGED_FILES" # Lists the changed files
+          CHANGED_PATHS=$(echo "$CHANGED_FILES" | xargs) # Converts the file list to a space-separated string
+          echo "changed_paths=$CHANGED_PATHS" >> "$GITHUB_OUTPUT" # Stores the paths in a GitHub Actions output variable
+
+      - name: Deploy Changed Files
+        if: steps.changes.outputs.changed_paths != '' # Only run this step if there are changed files
+        run: |
+          echo "Deploying only changed files:" # Message indicating deployment is starting
+          echo "${{ steps.changes.outputs.changed_paths }}" # Prints the paths to be deployed
+          sf project deploy start \ # Initiates the deployment
+            --source-dir ${{ steps.changes.outputs.changed_paths }} \ # Specifies which files to deploy
+            --target-org SFDC_v1 \ # Targets the previously authenticated org
+            --wait 10 \ # Waits up to 10 minutes for the deployment to complete
+            --ignore-conflicts \ # Ignores file conflicts during deployment
+            --verbose # Provides detailed logs of the deployment

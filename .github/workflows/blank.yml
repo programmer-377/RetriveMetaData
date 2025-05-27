@@ -1,9 +1,7 @@
 name: SFDC CI Deploy # Defines the name of the GitHub Actions workflow
 
 on:
-  push:
-    branches:
-      - master # Triggers the workflow only on pushes to the master branch
+  workflow_dispatch:
 
 jobs:
   deploy:
